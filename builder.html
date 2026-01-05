@@ -448,6 +448,48 @@
             border-color: var(--cw-success);
         }
 
+        .suggestions-box {
+            margin-top: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #F0F4FF 0%, #E8F0FE 100%);
+            border: 2px solid #B8D4FF;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(107, 78, 140, 0.1);
+        }
+
+        .suggestions-header {
+            font-weight: 600;
+            color: var(--cw-purple-dark);
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .suggestion-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #B8D4FF;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            line-height: 1.5;
+        }
+
+        .suggestion-item:hover {
+            background: var(--cw-purple);
+            color: white;
+            border-color: var(--cw-purple);
+            transform: translateX(4px);
+        }
+
+        .suggestion-item:last-child {
+            margin-bottom: 0;
+        }
+
         @media (max-width: 600px) {
             body { padding: 12px; }
             .header { padding: 20px; }
@@ -514,37 +556,50 @@
         <div id="simpleMode">
             <div class="form-group">
                 <label for="role">1. Who should the AI act as?</label>
-                <select id="role" onchange="generatePrompt()">
-                    <option value="an experienced commercial auto insurance underwriter">Underwriter (Trucking Insurance)</option>
-                    <option value="a professional insurance communicator">Insurance Communicator</option>
-                    <option value="a senior data analyst with insurance expertise">Data Analyst (Insurance)</option>
-                    <option value="a commercial insurance coverage specialist">Coverage Specialist</option>
-                    <option value="a trucking insurance regulatory specialist">Regulatory Specialist</option>
-                    <option value="a claims specialist with commercial auto expertise">Claims Specialist</option>
-                    <option value="an experienced HR professional in the insurance industry">HR Professional</option>
-                    <option value="a supportive career coach">Career Coach</option>
-                </select>
-                <div class="hint">Choose the expertise level that matches your needs</div>
+                <input type="text" id="role" placeholder="e.g., an experienced underwriter, a data analyst, a professional communicator..." oninput="generatePrompt()">
+                <div class="hint">Describe the role or expertise you need (e.g., "a senior trucking underwriter with 10 years experience")</div>
             </div>
 
             <div class="form-group">
                 <label for="task">2. What do you need help with?</label>
-                <input type="text" id="task" placeholder="e.g., analyze risk factors, draft an email, summarize loss trends..." oninput="generatePrompt()">
+                <input type="text" id="task" placeholder="e.g., analyze risk factors, draft an email, summarize loss trends..." oninput="handleTaskInput()">
                 <div class="hint">Be specific about what you want done</div>
+
+                <!-- Smart Suggestions Box -->
+                <div id="suggestions" class="suggestions-box" style="display: none;">
+                    <div class="suggestions-header">💡 Suggested prompts based on your task:</div>
+                    <div id="suggestionsList"></div>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="format">3. How do you want the output?</label>
                 <select id="format" onchange="generatePrompt()">
-                    <option value="a prioritized list with brief explanations">Prioritized List</option>
+                    <option value="a prioritized list with brief explanations">Prioritized List with Explanations</option>
                     <option value="bullet points">Bullet Points</option>
-                    <option value="a professional email draft">Email Draft</option>
-                    <option value="a step-by-step action plan">Step-by-Step Plan</option>
+                    <option value="a professional email draft">Professional Email Draft</option>
+                    <option value="a step-by-step action plan">Step-by-Step Action Plan</option>
                     <option value="a comparison table">Comparison Table</option>
                     <option value="a detailed summary">Detailed Summary</option>
-                    <option value="a short 3-5 sentence summary">Short Summary</option>
+                    <option value="a short 3-5 sentence summary">Short Summary (3-5 sentences)</option>
+                    <option value="a detailed summary with key findings">Summary with Key Findings</option>
+                    <option value="bullet points highlighting critical insights">Bullet Points with Insights</option>
+                    <option value="a concise, professional email under 200 words">Concise Email (Under 200 words)</option>
+                    <option value="a friendly yet professional message">Friendly Professional Message</option>
+                    <option value="bullet points of key takeaways">Key Takeaways</option>
+                    <option value="a detailed summary with actionable insights">Summary with Actionable Insights</option>
+                    <option value="a prioritized list with risk ratings">Prioritized List with Risk Ratings</option>
+                    <option value="a step-by-step analysis with recommendations">Analysis with Recommendations</option>
+                    <option value="bullet points with explanations">Bullet Points with Explanations</option>
+                    <option value="a side-by-side comparison with pros and cons">Side-by-Side Comparison</option>
+                    <option value="a detailed comparison with recommendations">Comparison with Recommendations</option>
+                    <option value="a prioritized list with timelines">Prioritized List with Timelines</option>
+                    <option value="a detailed implementation guide">Implementation Guide</option>
+                    <option value="a detailed summary with key metrics">Summary with Key Metrics</option>
+                    <option value="bullet points with trend analysis">Bullet Points with Trend Analysis</option>
+                    <option value="a comprehensive report with visualizations">Comprehensive Report</option>
                 </select>
-                <div class="hint">Select the format that best fits your use case</div>
+                <div class="hint">Select the format that best fits your use case (or let suggestions guide you)</div>
             </div>
         </div>
 
@@ -639,12 +694,123 @@
         generatePrompt();
     }
 
+    // Smart suggestion system
+    const suggestionRules = [
+        {
+            keywords: ['analyze', 'analysis', 'assess', 'evaluate', 'review', 'examine'],
+            suggestions: [
+                { role: 'a senior risk analyst', format: 'a prioritized list with brief explanations' },
+                { role: 'an experienced data analyst', format: 'a detailed summary with key findings' },
+                { role: 'a strategic business analyst', format: 'bullet points highlighting critical insights' }
+            ]
+        },
+        {
+            keywords: ['email', 'write', 'draft', 'compose', 'message', 'communicate'],
+            suggestions: [
+                { role: 'a professional business communicator', format: 'a professional email draft' },
+                { role: 'a skilled insurance communicator', format: 'a concise, professional email under 200 words' },
+                { role: 'a customer service specialist', format: 'a friendly yet professional message' }
+            ]
+        },
+        {
+            keywords: ['summarize', 'summary', 'recap', 'overview', 'key points'],
+            suggestions: [
+                { role: 'an executive briefing specialist', format: 'a short 3-5 sentence summary' },
+                { role: 'a professional analyst', format: 'bullet points of key takeaways' },
+                { role: 'a strategic consultant', format: 'a detailed summary with actionable insights' }
+            ]
+        },
+        {
+            keywords: ['risk', 'underwrite', 'underwriting', 'coverage', 'policy', 'claim'],
+            suggestions: [
+                { role: 'an experienced insurance underwriter', format: 'a prioritized list with risk ratings' },
+                { role: 'a senior claims specialist', format: 'a step-by-step analysis with recommendations' },
+                { role: 'a coverage specialist', format: 'bullet points with explanations' }
+            ]
+        },
+        {
+            keywords: ['compare', 'comparison', 'versus', 'vs', 'difference', 'contrast'],
+            suggestions: [
+                { role: 'a comparative analyst', format: 'a comparison table' },
+                { role: 'a strategic advisor', format: 'a side-by-side comparison with pros and cons' },
+                { role: 'a decision analyst', format: 'a detailed comparison with recommendations' }
+            ]
+        },
+        {
+            keywords: ['plan', 'strategy', 'steps', 'process', 'how to', 'guide'],
+            suggestions: [
+                { role: 'a project planning specialist', format: 'a step-by-step action plan' },
+                { role: 'a strategic consultant', format: 'a prioritized list with timelines' },
+                { role: 'a process improvement expert', format: 'a detailed implementation guide' }
+            ]
+        },
+        {
+            keywords: ['data', 'report', 'metrics', 'statistics', 'numbers', 'trends'],
+            suggestions: [
+                { role: 'a senior data analyst', format: 'a detailed summary with key metrics' },
+                { role: 'a business intelligence specialist', format: 'bullet points with trend analysis' },
+                { role: 'a statistical analyst', format: 'a comprehensive report with visualizations' }
+            ]
+        }
+    ];
+
+    function handleTaskInput() {
+        const task = document.getElementById('task').value.trim().toLowerCase();
+        const suggestionsBox = document.getElementById('suggestions');
+        const suggestionsList = document.getElementById('suggestionsList');
+
+        // Clear previous suggestions
+        suggestionsList.innerHTML = '';
+
+        if (task.length > 3) {
+            // Find matching suggestion rules
+            let matchedSuggestions = [];
+
+            for (const rule of suggestionRules) {
+                for (const keyword of rule.keywords) {
+                    if (task.includes(keyword)) {
+                        matchedSuggestions = rule.suggestions;
+                        break;
+                    }
+                }
+                if (matchedSuggestions.length > 0) break;
+            }
+
+            // If we found suggestions, display them
+            if (matchedSuggestions.length > 0) {
+                matchedSuggestions.forEach((suggestion, index) => {
+                    const suggestionBtn = document.createElement('button');
+                    suggestionBtn.className = 'suggestion-item';
+                    suggestionBtn.textContent = `Act as ${suggestion.role} → Output as ${suggestion.format}`;
+                    suggestionBtn.onclick = () => applySuggestion(suggestion);
+                    suggestionsList.appendChild(suggestionBtn);
+                });
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        } else {
+            suggestionsBox.style.display = 'none';
+        }
+
+        generatePrompt();
+    }
+
+    function applySuggestion(suggestion) {
+        document.getElementById('role').value = suggestion.role;
+        document.getElementById('format').value = suggestion.format;
+        generatePrompt();
+
+        // Show a toast notification
+        showToast('✓ Suggestion applied!');
+    }
+
     function generatePrompt() {
         const realityFilterEnabled = document.getElementById('realityFilter').checked;
         let prompt = '';
 
         if (currentMode === 'simple') {
-            const role = document.getElementById('role').value;
+            const role = document.getElementById('role').value.trim() || "[specify your role]";
             const task = document.getElementById('task').value.trim() || "[describe your task here]";
             const format = document.getElementById('format').value;
 
@@ -727,9 +893,10 @@ ${prompt}`;
 
     function resetForm() {
         if (currentMode === 'simple') {
-            document.getElementById('role').selectedIndex = 0;
+            document.getElementById('role').value = '';
             document.getElementById('task').value = '';
             document.getElementById('format').selectedIndex = 0;
+            document.getElementById('suggestions').style.display = 'none';
         } else {
             document.getElementById('context').value = '';
             document.getElementById('roleAdv').value = '';
